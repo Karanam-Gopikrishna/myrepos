@@ -1,31 +1,53 @@
-name: Terraform CI/CD
+trigger:
+  branches:
+    include:
+      - main  # Define the branch for which the pipeline should trigger on code push
 
-on:
-  push:
-    branches:
-      - master # Change this to your main branch
+pool:
+  vmImage: 'ubuntu-latest'
 
-jobs:
-  terraform:
-    runs-on: ubuntu-latest
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'  # Use Python 3.x version
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+- script: |
+    sudo apt-get update && sudo apt-get install -y unzip
+    curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+    sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+    sudo apt-get update && sudo apt-get install -y terraform
+  displayName: 'Install Terraform'
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 1.0.0 # Change this to the version you want
+- checkout: self
 
-    - name: Terraform Init
-      run: terraform init
+- script: |
+    cd path/to/terraform/config  # Change directory to where your Terraform configurations reside
+    terraform init
+    terraform plan -out=tfplan
+    terraform apply tfplan
+  displayName: 'Terraform Apply'
+  env:
+    ARM_CLIENT_ID: $(servicePrincipalId)
+    ARM_CLIENT_SECRET: $(servicePrincipalKey)
+    ARM_SUBSCRIPTION_ID: $(subscriptionId)
+    ARM_TENANT_ID: $(tenantId)
+    # You should set these environment variables in your Azure Pipelines variables configuration
 
-    - name: Terraform Plan
-      run: terraform plan -out=tfplan
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Pipeline.Workspace)/terraform_output'  # Path to save Terraform output for future reference
+    artifact: 'terraform_output'
 
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/main' # Only apply on the main branch
-      run: terraform apply -auto-approve tfplan
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'YourAzureServiceConnection'  # Name of your Azure service connection in Azure Pipelines
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      # Additional Azure CLI commands for post-deployment actions, if any
 
-    # Add more steps here as needed, such as testing, notifications, etc.
+- task: DeleteFiles@1
+  inputs:
+    SourceFolder: '$(Pipeline.Workspace)/terraform_output'
+    Contents: '**/*.tfplan'
+    CleanFolders: true
