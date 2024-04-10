@@ -1,7 +1,7 @@
 # Azure Pipeline YAML to build and deploy Terraform
 
 trigger:
-- main  # Trigger pipeline on changes to the main branch. Adjust as needed.
+- master  # Trigger pipeline on changes to the main branch. Adjust as needed.
 
 pool:
   vmImage: 'ubuntu-latest'  # Use an Ubuntu agent
