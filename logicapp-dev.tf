@@ -11,8 +11,8 @@ resource "azurerm_storage_account" "test-la-str" {
   account_replication_type = "LRS"
 }
 
-resource "azurerm_app_service_plan" "test-la-splan" {
-  name                = "test-la-splan"
+resource "azurerm_app_service_plan" "test-la-serviceplan" {
+  name                = "test-la-serviceplan"
   location            = azurerm_resource_group.testla-rg.location
   resource_group_name = azurerm_resource_group.testla-rg.name
   kind                = "elastic"
