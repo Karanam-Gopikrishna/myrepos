@@ -19,7 +19,7 @@ steps:
     inputs:
       command: custom
       verbose: false
-      customCommand: 'install --production'
+      customCommand: 'install --dev'
   - task: ArchiveFiles@2
     displayName: 'Archive $(Build.SourcesDirectory)'
     inputs:
