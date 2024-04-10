@@ -1,45 +1,31 @@
-# Azure Pipeline YAML to build and deploy Terraform
+name: Terraform CI/CD
 
-trigger:
-- master  # Trigger pipeline on changes to the main branch. Adjust as needed.
+on:
+  push:
+    branches:
+      - master # Change this to your main branch
 
-pool:
-  vmImage: 'ubuntu-latest'  # Use an Ubuntu agent
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'  # Use Python 3.x, required for Terraform
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-- script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt  # If you have any Python dependencies
-  displayName: 'Install dependencies'  # Change as needed
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 1.0.0 # Change this to the version you want
 
-- script: |
-    terraform init  # Initialize Terraform
-  displayName: 'Terraform init'
+    - name: Terraform Init
+      run: terraform init
 
-- script: |
-    terraform validate  # Validate Terraform configuration
-  displayName: 'Terraform validate'
+    - name: Terraform Plan
+      run: terraform plan -out=tfplan
 
-- script: |
-    terraform plan -out=tfplan  # Generate Terraform plan
-  displayName: 'Terraform plan'
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' # Only apply on the main branch
+      run: terraform apply -auto-approve tfplan
 
-- task: PublishPipelineArtifact@1
-  inputs:
-    targetPath: $(Build.ArtifactStagingDirectory)
-    artifact: 'terraform_plan'
-
-- script: |
-    terraform apply -auto-approve tfplan  # Apply Terraform changes
-  displayName: 'Terraform apply'
-
-- task: PublishPipelineArtifact@1
-  inputs:
-    targetPath: $(Build.ArtifactStagingDirectory)
-    artifact: 'terraform_state'
-
-# Add additional steps for deploying the infrastructure or testing as needed.
+    # Add more steps here as needed, such as testing, notifications, etc.
